@@ -3,181 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Onchain Verify Test</title>
-    <!-- Ethers.js kütüphanesi -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <title>Base Onchain Verify DApp</title>
+    <!-- Ethers.js Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f4f4f9; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        button { background: #0052ff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
-        button:hover { background: #0040cc; }
-        input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .status { margin-top: 10px; font-weight: bold; word-break: break-all; }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; max-width: 600px; margin: 40px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .section { margin-bottom: 25px; padding: 15px; border: 1px solid #e1e4e8; border-radius: 6px; }
+        button { background-color: #4F46E5; color: white; padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; margin-top: 5px; }
+        button:hover { background-color: #4338CA; }
+        input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        label { font-weight: bold; font-size: 13px; }
+        .status { margin-top: 10px; font-size: 14px; color: #555; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Cüzdan Bağlantısı</h2>
+    <h2>Base Onchain Verify DApp</h2>
+
+    <!-- Cüzdan Bağlantı Bölümü -->
+    <div class="section">
+        <h3>1. Cüzdan Bağlantısı</h3>
         <button id="connectWalletBtn">MetaMask'i Bağla</button>
-        <div class="status" id="walletStatus">Cüzdan bağlı değil</div>
+        <p class="status" id="walletStatus">Cüzdan bağlı değil.</p>
     </div>
 
-    <div class="card">
-        <h2>Kontrata Katılım (Participate)</h2>
-        <label>Expiration (Zaman Aşımı / Süre):</label>
-        <input type="text" id="expirationInput" placeholder="Örn: 1800000000">
+    <!-- Kontrat Katılım Bölümü -->
+    <div class="section">
+        <h3>2. Kontrata Katılım (Participate)</h3>
         
-        <label>Identity Hash (Kimlik Hash'i):</label>
-        <input type="text" id="identityHashInput" placeholder="0x...">
-        
-        <label>Signature (İmza):</label>
-        <input type="text" id="signatureInput" placeholder="0x...">
+        <!-- Otomatik Test Verisi Üret Butonu -->
+        <button id="generateTestBtn" type="button" style="background-color: #10B981; margin-bottom: 15px;">🧪 Otomatik Test Verisi Üret ve Doldur</button>
 
-        <button id="participateBtn">Katılımı Onayla (Participate)</button>
-        <div class="status" id="txStatus"></div>
+        <form id="participateForm">
+            <label for="expirationInput">Expiration (Zaman Aşımı):</label>
+            <input type="text" id="expirationInput" placeholder="Örn: 1780000000">
+
+            <label for="identityHashInput">Identity Hash (Kimlik Hash'i):</label>
+            <input type="text" id="identityHashInput" placeholder="0x...">
+
+            <label for="signatureInput">Signature (İmza):</label>
+            <input type="text" id="signatureInput" placeholder="0x...">
+
+            <button type="submit" style="background-color: #2563EB;">Katılımı Onayla (Participate)</button>
+        </form>
     </div>
 
     <script>
-        // Deploy ettiğimiz kontrat adresi
-        const CONTRACT_ADDRESS = "0xc8a24bdbaE9f1B529690F148c7717b19F1bA4c59";
-        
-        // Eklediğin güncel ABI
-        const CONTRACT_ABI = [
-          {
-            "inputs": [
-              {
-                "internalType": "address",
-                "name": "_signerRegistry",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "_provider",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes",
-                "name": "_conditions",
-                "type": "bytes"
-              }
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-          },
-          {
-            "anonymous": false,
-            "inputs": [
-              {
-                "indexed": true,
-                "internalType": "bytes32",
-                "name": "identityHash",
-                "type": "bytes32"
-              },
-              {
-                "indexed": true,
-                "internalType": "address",
-                "name": "wallet",
-                "type": "address"
-              }
-            ],
-            "name": "Participated",
-            "type": "event"
-          },
-          {
-            "inputs": [],
-            "name": "conditions",
-            "outputs": [
-              {
-                "internalType": "bytes",
-                "name": "",
-                "type": "bytes"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [
-              {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-              }
-            ],
-            "name": "hasParticipated",
-            "outputs": [
-              {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [
-              {
-                "internalType": "uint256",
-                "name": "expiration",
-                "type": "uint256"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "identityHash",
-                "type": "bytes32"
-              },
-              {
-                "internalType": "bytes",
-                "name": "signature",
-                "type": "bytes"
-              }
-            ],
-            "name": "participate",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "policyHash",
-            "outputs": [
-              {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "provider",
-            "outputs": [
-              {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "inputs": [],
-            "name": "signerRegistry",
-            "outputs": [
-              {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          }
+        // Kontrat Bilgileri (Kendi kontrat adresini ve ABI'ni buraya ekleyebilirsin)
+        const contractAddress = "SENIN_KONTRAT_ADRESIN"; 
+        const contractABI = [
+            "function participate(uint256 expiration, bytes32 identityHash, bytes calldata signature) external"
         ];
 
         let provider, signer, contract;
@@ -185,46 +60,78 @@
         document.getElementById('connectWalletBtn').addEventListener('click', async () => {
             if (window.ethereum) {
                 try {
-                    await window.ethereum.request({ method: 'eth_requestAccounts' });
                     provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
                     signer = provider.getSigner();
                     const address = await signer.getAddress();
-                    
-                    document.getElementById('walletStatus').innerText = `Bağlı Cüzdan: ${address}`;
-                    document.getElementById('connectWalletBtn').innerText = "Bağlandı";
-                    
-                    // Kontratı tanımla
-                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-                } catch (error) {
-                    console.error(error);
-                    alert("Cüzdan bağlama hatası!");
+                    document.getElementById('walletStatus').innerText = "Cüzdan bağlandı: " + address;
+                } catch (err) {
+                    console.error(err);
+                    alert("Cüzdan bağlantısı reddedildi.");
                 }
             } else {
                 alert("Lütfen MetaMask yükleyin!");
             }
         });
 
-        document.getElementById('participateBtn').addEventListener('click', async () => {
-            if (!contract) {
-                alert("Önce cüzdanınızı bağlayın!");
+        // Otomatik Test Verisi Üretme Butonu İşlevi
+        document.getElementById('generateTestBtn').addEventListener('click', async () => {
+            try {
+                if (!window.ethereum) {
+                    alert("Lütfen önce MetaMask'i bağlayın!");
+                    return;
+                }
+                
+                const prov = new ethers.providers.Web3Provider(window.ethereum);
+                await prov.send("eth_requestAccounts", []);
+                const sgn = prov.getSigner();
+                const participantAddress = await sgn.getAddress();
+                
+                const expiration = Math.floor(Date.now() / 1000) + 3600; // 1 saat sonra
+                const identityHash = ethers.utils.keccak256(
+                    ethers.utils.defaultAbiCoder.encode(["address"], [participantAddress])
+                );
+                
+                const messageHash = ethers.utils.solidityKeccak256(
+                    ["uint256", "bytes32", "address"],
+                    [expiration, identityHash, participantAddress]
+                );
+                
+                const signature = await sgn.signMessage(ethers.utils.arrayify(messageHash));
+                
+                // Form alanlarını otomatik doldur
+                document.getElementById('expirationInput').value = expiration;
+                document.getElementById('identityHashInput').value = identityHash;
+                document.getElementById('signatureInput').value = signature;
+                
+                alert("Test verileri başarıyla üretildi ve dolduruldu!");
+            } catch (err) {
+                console.error(err);
+                alert("İmza üretilirken bir hata oluştu.");
+            }
+        });
+
+        // Kontrat Fonksiyonunu Çağırma
+        document.getElementById('participateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!signer) {
+                alert("Lütfen önce cüzdanınızı bağlayın!");
                 return;
             }
 
             const expiration = document.getElementById('expirationInput').value;
             const identityHash = document.getElementById('identityHashInput').value;
             const signature = document.getElementById('signatureInput').value;
-            const txStatus = document.getElementById('txStatus');
 
             try {
-                txStatus.innerText = "İşlem cüzdana gönderiliyor...";
-                const tx = await contract.participate(expiration, identityHash, signature);
-                txStatus.innerText = `İşlem gönderildi, onay bekleniyor... Hash: ${tx.hash}`;
-                
+                const contractWithSigner = new ethers.Contract(contractAddress, contractABI, signer);
+                const tx = await contractWithSigner.participate(expiration, identityHash, signature);
+                alert("İşlem gönderildi! Onay bekleniyor...");
                 await tx.wait();
-                txStatus.innerText = "İşlem başarıyla onaylandı ve tamamlandı! 🎉";
-            } catch (error) {
-                console.error(error);
-                txStatus.innerText = `Hata: ${error.message || error}`;
+                alert("İşlem başarıyla onaylandı ve tamamlandı! 🎉");
+            } catch (err) {
+                console.error(err);
+                alert("İşlem başarısız oldu: " + (err.reason || err.message));
             }
         });
     </script>
