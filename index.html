@@ -74,7 +74,7 @@
             }
         });
 
-        // Otomatik Test Verisi Üretme Butonu İşlevi (ENS Bypass Edildi)
+        // Otomatik Test Verisi Üretme Butonu İşlevi
         document.getElementById('generateTestBtn').addEventListener('click', async () => {
             try {
                 if (!window.ethereum) {
@@ -85,8 +85,6 @@
                 const prov = new ethers.providers.Web3Provider(window.ethereum);
                 await prov.send("eth_requestAccounts", []);
                 const sgn = prov.getSigner();
-                
-                // ENS sorgusuna takılmamak için adres direkt signer üzerinden alınıyor
                 const participantAddress = await sgn.getAddress();
                 
                 const expiration = Math.floor(Date.now() / 1000) + 3600; // 1 saat sonra
@@ -113,11 +111,12 @@
             }
         });
 
-        // Kontrat Fonksiyonunu Çağırma
+        // Kontrat Fonksiyonunu Çağırma (ENS Bypass Edilmiş Güvenli Sürüm)
         document.getElementById('participateForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!signer) {
-                alert("Lütfen önce cüzdanınızı bağlayın!");
+            
+            if (!window.ethereum) {
+                alert("Lütfen önce MetaMask'i bağlayın!");
                 return;
             }
 
@@ -126,8 +125,14 @@
             const signature = document.getElementById('signatureInput').value;
 
             try {
-                const contractWithSigner = new ethers.Contract(contractAddress, contractABI, signer);
+                // ENS network hatasını tamamen engellemek için doğrudan güncel signer kullanılıyor
+                const customProvider = new ethers.providers.Web3Provider(window.ethereum);
+                await customProvider.send("eth_requestAccounts", []);
+                const customSigner = customProvider.getSigner();
+
+                const contractWithSigner = new ethers.Contract(contractAddress, contractABI, customSigner);
                 const tx = await contractWithSigner.participate(expiration, identityHash, signature);
+                
                 alert("İşlem gönderildi! Onay bekleniyor...");
                 await tx.wait();
                 alert("İşlem başarıyla onaylandı ve tamamlandı! 🎉");
